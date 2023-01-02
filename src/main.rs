@@ -10,9 +10,16 @@ use wayrs_client::global::GlobalsExt;
 use wayrs_client::proxy::{Dispatch, Dispatcher};
 use wayrs_client::socket::IoMode;
 
+use std::collections::HashMap;
 use std::convert::Infallible;
 
 fn main() {
+    let args: Vec<_> = std::env::args().skip(1).collect();
+    let mappings = args
+        .chunks_exact(2)
+        .map(|mapping| (mapping[0].to_owned(), mapping[1].to_owned()))
+        .collect();
+
     let mut conn = Connection::connect().unwrap();
     let globals = conn.blocking_collect_initial_globals().unwrap();
 
@@ -21,7 +28,10 @@ fn main() {
     let _seat_status = status_mgr.get_river_seat_status(&mut conn, seat);
     status_mgr.destroy(&mut conn);
 
-    let mut state = State;
+    let mut state = State {
+        mappings,
+        kbd_layouts: HashMap::new(),
+    };
 
     loop {
         conn.flush(IoMode::Blocking).unwrap();
@@ -30,7 +40,10 @@ fn main() {
     }
 }
 
-struct State;
+struct State {
+    mappings: HashMap<String, String>,
+    kbd_layouts: HashMap<String, String>,
+}
 
 impl Dispatcher for State {
     type Error = Infallible;
@@ -48,11 +61,25 @@ impl Dispatch<ZriverSeatStatusV1> for State {
             Event::KeyboardLayout(event) => {
                 let device = String::from_utf8_lossy(event.device.as_bytes());
                 let layout = String::from_utf8_lossy(event.layout.as_bytes());
-                println!("{device}: {layout}");
+                let mapped = self
+                    .mappings
+                    .get(&*layout)
+                    .map(|s| s.as_str())
+                    .unwrap_or(&*layout);
+                println!("{mapped}");
+                self.kbd_layouts
+                    .insert(device.into_owned(), layout.into_owned());
             }
             Event::KeyboardLayoutClear(device) => {
                 let device = String::from_utf8_lossy(device.as_bytes());
-                println!("{device}: <none>");
+                self.kbd_layouts.remove(&*device);
+                let layout = self
+                    .kbd_layouts
+                    .iter()
+                    .next()
+                    .map(|(_, layout)| layout.as_str())
+                    .unwrap_or("N/A");
+                println!("{layout}");
             }
             _ => (),
         }
