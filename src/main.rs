@@ -45,10 +45,15 @@ impl Dispatch<ZriverSeatStatusV1> for State {
     ) {
         use zriver_seat_status_v1::Event;
         match event {
-            Event::KeyboardLayout(layout) => {
-                println!("{}", String::from_utf8_lossy(layout.as_bytes()));
+            Event::KeyboardLayout(event) => {
+                let device = String::from_utf8_lossy(event.device.as_bytes());
+                let layout = String::from_utf8_lossy(event.layout.as_bytes());
+                println!("{device}: {layout}");
             }
-            Event::KeyboardLayoutClear => println!(),
+            Event::KeyboardLayoutClear(device) => {
+                let device = String::from_utf8_lossy(device.as_bytes());
+                println!("{device}: <none>");
+            }
             _ => (),
         }
     }

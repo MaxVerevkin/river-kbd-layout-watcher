@@ -146,17 +146,22 @@
     </event>
 
     <event name="keyboard_layout" since="5">
-      <description summary="the name of currectly active keyboard layout">
-        Sent once on binding the interface if available and again whenever the
-        layout changes.
+      <description summary="the name of currently active keyboard layout">
+        Sent whenever the name of active keyboard layout changes. Either this
+        or keyboard_layout_clear event is sent on binding the interface for
+        each keyboard.
       </description>
-      <arg name="name" type="string" summary="name of the layout"/>
+      <arg name="device" type="string" summary="the identifier of keyboard device"/>
+      <arg name="layout" type="string" summary="name of the layout"/>
     </event>
 
     <event name="keyboard_layout_clear" since="5">
-      <description summary="the name of currectly active keyboard layout">
-        Sent when no keyboard layout is active or active layout has no name.
+      <description summary="the name of currently active keyboard layout">
+        Sent whenever the name of active keyboard layout becomes unavailable.
+        Either this or keyboard_layout event is sent on binding the interface
+        for each keyboard.
       </description>
+      <arg name="device" type="string" summary="the identifier of keyboard device"/>
     </event>
   </interface>
 </protocol>
