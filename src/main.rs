@@ -1,12 +1,9 @@
 mod protocol {
-    use wayrs_client;
-    use wayrs_client::protocol::*;
+    pub use wayrs_client::protocol::*;
     wayrs_client::scanner::generate!("river-status-unstable-v1.xml");
 }
 
 use protocol::*;
-use wayrs_client::protocol::*;
-
 use wayrs_client::connection::Connection;
 use wayrs_client::global::GlobalsExt;
 use wayrs_client::IoMode;
