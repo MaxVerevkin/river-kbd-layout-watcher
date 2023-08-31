@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-wayrs-client = "0.10.0"
+wayrs-client = "0.12.0"

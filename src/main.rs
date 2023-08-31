@@ -4,9 +4,8 @@ mod protocol {
 }
 
 use protocol::*;
-use wayrs_client::connection::Connection;
 use wayrs_client::global::GlobalsExt;
-use wayrs_client::IoMode;
+use wayrs_client::{Connection, EventCtx, IoMode};
 
 use std::collections::HashMap;
 
@@ -17,11 +16,10 @@ fn main() {
         .map(|mapping| (mapping[0].to_owned(), mapping[1].to_owned()))
         .collect();
 
-    let mut conn = Connection::connect().unwrap();
-    let globals = conn.blocking_collect_initial_globals().unwrap();
+    let (mut conn, globals) = Connection::connect_and_collect_globals().unwrap();
 
-    let seat: WlSeat = globals.bind(&mut conn, 1..=1).unwrap();
-    let status_mgr: ZriverStatusManagerV1 = globals.bind(&mut conn, 5..=5).unwrap();
+    let seat: WlSeat = globals.bind(&mut conn, 1).unwrap();
+    let status_mgr: ZriverStatusManagerV1 = globals.bind(&mut conn, 5).unwrap();
     let _seat_status = status_mgr.get_river_seat_status_with_cb(&mut conn, seat, seat_status_cb);
     status_mgr.destroy(&mut conn);
 
@@ -42,31 +40,28 @@ struct State {
     kbd_layouts: HashMap<String, String>,
 }
 
-fn seat_status_cb(
-    _: &mut Connection<State>,
-    state: &mut State,
-    _: ZriverSeatStatusV1,
-    event: zriver_seat_status_v1::Event,
-) {
+fn seat_status_cb(ctx: EventCtx<State, ZriverSeatStatusV1>) {
     use zriver_seat_status_v1::Event;
-    match event {
+    match ctx.event {
         Event::KeyboardLayout(event) => {
             let device = String::from_utf8_lossy(event.device.as_bytes());
             let layout = String::from_utf8_lossy(event.layout.as_bytes());
-            let mapped = state
+            let mapped = ctx
+                .state
                 .mappings
                 .get(&*layout)
                 .map(|s| s.as_str())
                 .unwrap_or(&*layout);
             println!("{mapped}");
-            state
+            ctx.state
                 .kbd_layouts
                 .insert(device.into_owned(), layout.into_owned());
         }
         Event::KeyboardLayoutClear(device) => {
             let device = String::from_utf8_lossy(device.as_bytes());
-            state.kbd_layouts.remove(&*device);
-            let layout = state
+            ctx.state.kbd_layouts.remove(&*device);
+            let layout = ctx
+                .state
                 .kbd_layouts
                 .iter()
                 .next()
